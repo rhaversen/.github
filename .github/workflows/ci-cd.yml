@@ -1,0 +1,120 @@
+name: Reusable CI/CD
+
+on:
+    workflow_call:
+        inputs:
+            project_name:
+                description: "Name of the project (e.g., ExsysBackend)"
+                required: true
+                type: string
+            dockerhub_image_name:
+                description: "Docker Hub image name (e.g., exsys-backend)"
+                required: true
+                type: string
+            node_version:
+                description: "Node.js version to use"
+                required: false
+                type: string
+                default: "lts/*"
+            push_sourcemaps:
+                description: "Push sourcemaps to Sentry (typically only for backends)"
+                required: false
+                type: boolean
+                default: false
+            sentry_project:
+                description: "Sentry project name (required if push_sourcemaps is true)"
+                required: false
+                type: string
+        secrets:
+            DOCKER_USERNAME:
+                required: true
+            DOCKER_PASSWORD:
+                required: true
+            SENTRY_AUTH_TOKEN:
+                required: true
+            DEVOPS_REPO_TOKEN:
+                required: true
+
+jobs:
+    build-and-push:
+        runs-on: ubuntu-latest
+        steps:
+            -   name: Set environment based on branch
+                run: |
+                    if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+                      echo "environment=production" >> $GITHUB_ENV
+                    else
+                      echo "environment=staging" >> $GITHUB_ENV
+                    fi
+
+            -   name: Check out code
+                uses: actions/checkout@v6
+
+            -   name: Setup Node.js
+                uses: actions/setup-node@v6
+                with:
+                    node-version: ${{ inputs.node_version }}
+                    cache: "npm"
+                    cache-dependency-path: "**/package-lock.json"
+
+            -   name: Install dependencies
+                run: npm ci
+
+            -   name: Build
+                run: npm run build
+
+            -   name: Push source maps
+                if: ${{ inputs.push_sourcemaps && env.environment == 'production' }}
+                run: |
+                    npx sentry-cli sourcemaps inject --org rasmus-haversen --project ${{ inputs.sentry_project }} ./dist
+                    npx sentry-cli sourcemaps upload --org rasmus-haversen --project ${{ inputs.sentry_project }} ./dist
+                env:
+                    SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+
+            -   name: Set up Docker Buildx
+                uses: docker/setup-buildx-action@v3
+
+            -   name: Login to Docker Hub
+                uses: docker/login-action@v3
+                with:
+                    username: ${{ secrets.DOCKER_USERNAME }}
+                    password: ${{ secrets.DOCKER_PASSWORD }}
+
+            -   name: Build and push Docker image
+                run: |
+                    docker buildx create --use
+                    docker buildx build --file Dockerfile --platform linux/arm64,linux/amd64 \
+                      --push --tag ${{ secrets.DOCKER_USERNAME }}/${{ inputs.dockerhub_image_name }}:${{ github.sha }} .
+
+            -   name: Configure Git
+                run: |
+                    git config --global user.name "GitHub Actions Bot"
+                    git config --global user.email "actions@github.com"
+
+            -   name: Replace image tag in deployment.yaml
+                run: |
+                    sed -i "s/\${GITHUB_SHA}/${{ github.sha }}/g" k8s/${{ env.environment }}/deployment.yaml
+
+            -   name: Commit changes
+                run: |
+                    git add k8s/${{ env.environment }}/*
+                    git commit -m "${{ github.sha }}"
+
+            -   name: Checkout DevOps repo
+                uses: actions/checkout@v6
+                with:
+                    repository: "rhaversen/DevOps"
+                    token: ${{ secrets.DEVOPS_REPO_TOKEN }}
+                    path: "DevOps"
+
+            -   name: Copy files to DevOps
+                run: |
+                    mkdir -p DevOps/${{ inputs.project_name }}/${{ env.environment }}
+                    cp -r k8s/${{ env.environment }}/* DevOps/${{ inputs.project_name }}/${{ env.environment }}/
+
+            -   name: Push changes to DevOps
+                run: |
+                    cd DevOps
+                    git add ${{ inputs.project_name }}/${{ env.environment }}/*
+                    git commit -m "${{ inputs.project_name }}/${{ env.environment }}: ${{ github.sha }}"
+                    git push origin HEAD

@@ -25,6 +25,11 @@ on:
                 description: "Sentry project name (required if push_sourcemaps is true)"
                 required: false
                 type: string
+            k8s_path:
+                description: "Path to k8s directory (default: k8s). Use for non-standard structures like k8s/evaluation"
+                required: false
+                type: string
+                default: "k8s"
         secrets:
             DOCKER_USERNAME:
                 required: true
@@ -93,11 +98,11 @@ jobs:
 
             -   name: Replace image tag in deployment.yaml
                 run: |
-                    sed -i "s/\${GITHUB_SHA}/${{ github.sha }}/g" k8s/${{ env.environment }}/deployment.yaml
+                    sed -i "s/\${GITHUB_SHA}/${{ github.sha }}/g" ${{ inputs.k8s_path }}/${{ env.environment }}/deployment.yaml
 
             -   name: Commit changes
                 run: |
-                    git add k8s/${{ env.environment }}/*
+                    git add ${{ inputs.k8s_path }}/${{ env.environment }}/*
                     git commit -m "${{ github.sha }}"
 
             -   name: Checkout DevOps repo
@@ -110,7 +115,7 @@ jobs:
             -   name: Copy files to DevOps
                 run: |
                     mkdir -p DevOps/${{ inputs.project_name }}/${{ env.environment }}
-                    cp -r k8s/${{ env.environment }}/* DevOps/${{ inputs.project_name }}/${{ env.environment }}/
+                    cp -r ${{ inputs.k8s_path }}/${{ env.environment }}/* DevOps/${{ inputs.project_name }}/${{ env.environment }}/
 
             -   name: Push changes to DevOps
                 run: |

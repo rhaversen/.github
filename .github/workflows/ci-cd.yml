@@ -88,8 +88,15 @@ jobs:
             -   name: Build and push Docker image
                 run: |
                     docker buildx create --use
-                    docker buildx build --file Dockerfile --platform linux/arm64,linux/amd64 \
-                      --push --tag ${{ secrets.DOCKER_USERNAME }}/${{ inputs.dockerhub_image_name }}:${{ github.sha }} .
+                    if [[ "${{ env.environment }}" == "production" ]]; then
+                      docker buildx build --file Dockerfile --platform linux/arm64,linux/amd64 \
+                        --push --tag ${{ secrets.DOCKER_USERNAME }}/${{ inputs.dockerhub_image_name }}:${{ github.sha }} \
+                        --tag ${{ secrets.DOCKER_USERNAME }}/${{ inputs.dockerhub_image_name }}:latest .
+                    else
+                      docker buildx build --file Dockerfile --platform linux/arm64,linux/amd64 \
+                        --push --tag ${{ secrets.DOCKER_USERNAME }}/${{ inputs.dockerhub_image_name }}:${{ github.sha }} \
+                        --tag ${{ secrets.DOCKER_USERNAME }}/${{ inputs.dockerhub_image_name }}:staging .
+                    fi
 
             -   name: Configure Git
                 run: |

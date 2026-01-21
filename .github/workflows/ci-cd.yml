@@ -128,5 +128,9 @@ jobs:
                 run: |
                     cd DevOps
                     git add ${{ inputs.project_name }}/${{ env.environment }}/*
-                    git commit -m "${{ inputs.project_name }}/${{ env.environment }}: ${{ github.sha }}"
-                    git push origin HEAD
+                    if git diff --staged --quiet; then
+                      echo "No changes to commit"
+                    else
+                      git commit -m "${{ inputs.project_name }}/${{ env.environment }}: ${{ github.sha }}"
+                      git push origin HEAD
+                    fi

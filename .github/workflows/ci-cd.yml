@@ -30,6 +30,11 @@ on:
                 required: false
                 type: string
                 default: "k8s"
+            devops_repo:
+                description: "DevOps repository to push k8s manifests to (default: rhaversen/DevOps)"
+                required: false
+                type: string
+                default: "rhaversen/DevOps"
         secrets:
             DOCKER_USERNAME:
                 required: true
@@ -115,7 +120,7 @@ jobs:
             -   name: Checkout DevOps repo
                 uses: actions/checkout@v6
                 with:
-                    repository: "rhaversen/DevOps"
+                    repository: ${{ inputs.devops_repo }}
                     token: ${{ secrets.DEVOPS_REPO_TOKEN }}
                     path: "DevOps"
 

@@ -132,5 +132,6 @@ jobs:
                       echo "No changes to commit"
                     else
                       git commit -m "${{ inputs.project_name }}/${{ env.environment }}: ${{ github.sha }}"
+                      git pull --rebase origin main
                       git push origin HEAD
                     fi

@@ -8,6 +8,11 @@ on:
                 required: false
                 type: string
                 default: "lts/*"
+            submodules:
+                description: "Check out submodules recursively"
+                required: false
+                type: boolean
+                default: true
             run_unit_tests:
                 description: "Run unit tests"
                 required: false
@@ -31,7 +36,7 @@ jobs:
             -   name: Checkout repository
                 uses: actions/checkout@v6
                 with:
-                    submodules: recursive
+                    submodules: ${{ inputs.submodules }}
 
             -   name: Setup Node.js
                 uses: actions/setup-node@v6
@@ -60,7 +65,7 @@ jobs:
             -   name: Checkout repository
                 uses: actions/checkout@v6
                 with:
-                    submodules: recursive
+                    submodules: ${{ inputs.submodules }}
 
             -   name: Setup Node.js
                 uses: actions/setup-node@v6
@@ -89,7 +94,7 @@ jobs:
             -   name: Checkout repository
                 uses: actions/checkout@v6
                 with:
-                    submodules: recursive
+                    submodules: ${{ inputs.submodules }}
 
             -   name: Setup Node.js
                 uses: actions/setup-node@v6
@@ -118,7 +123,7 @@ jobs:
             -   name: Checkout repository
                 uses: actions/checkout@v6
                 with:
-                    submodules: recursive
+                    submodules: ${{ inputs.submodules }}
 
             -   name: Setup Node.js
                 uses: actions/setup-node@v6
@@ -145,7 +150,7 @@ jobs:
             -   name: Checkout repository
                 uses: actions/checkout@v6
                 with:
-                    submodules: recursive
+                    submodules: ${{ inputs.submodules }}
 
             -   name: Setup Node.js
                 uses: actions/setup-node@v6
@@ -166,7 +171,7 @@ jobs:
             -   name: Checkout repository
                 uses: actions/checkout@v6
                 with:
-                    submodules: recursive
+                    submodules: ${{ inputs.submodules }}
 
             -   name: Setup Node.js
                 uses: actions/setup-node@v6
@@ -188,7 +193,7 @@ jobs:
             -   name: Checkout repository
                 uses: actions/checkout@v6
                 with:
-                    submodules: recursive
+                    submodules: ${{ inputs.submodules }}
 
             -   name: Download production artifacts
                 uses: actions/download-artifact@v7

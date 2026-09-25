@@ -16,6 +16,11 @@ on:
                 required: false
                 type: string
                 default: "lts/*"
+            submodules:
+                description: "Check out submodules recursively"
+                required: false
+                type: boolean
+                default: true
             push_sourcemaps:
                 description: "Push sourcemaps to Sentry (typically only for backends)"
                 required: false
@@ -55,7 +60,7 @@ jobs:
             -   name: Check out code
                 uses: actions/checkout@v6
                 with:
-                    submodules: recursive
+                    submodules: ${{ inputs.submodules }}
 
             -   name: Setup Node.js
                 uses: actions/setup-node@v6

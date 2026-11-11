@@ -1,0 +1,38 @@
+name: Reusable Branch Policy
+
+# Which branch may go where: any branch into development, only development into staging and only staging into main,
+# those two opened by the repository's owner alone. Each repository calls this on its pull requests, and its rulesets
+# require the check on all three branches.
+
+on:
+    workflow_call:
+
+permissions: {}
+
+jobs:
+    check:
+        runs-on: ubuntu-latest
+        steps:
+            -   name: Check source branch and author
+                env:
+                    BASE: ${{ github.base_ref }}
+                    HEAD: ${{ github.head_ref }}
+                    HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+                    AUTHOR: ${{ github.event.pull_request.user.login }}
+                    REPO: ${{ github.repository }}
+                    OWNER: ${{ github.repository_owner }}
+                run: |
+                    case "$BASE" in
+                        staging) want=development ;;
+                        main) want=staging ;;
+                        *) echo "Any branch may go into $BASE"; exit 0 ;;
+                    esac
+                    if [ "$HEAD_REPO" != "$REPO" ] || [ "$HEAD" != "$want" ]; then
+                        echo "::error::Only $want goes into $BASE, not $HEAD_REPO:$HEAD"
+                        exit 1
+                    fi
+                    if [ "$AUTHOR" != "$OWNER" ]; then
+                        echo "::error::Only $OWNER opens pull requests into $BASE, not $AUTHOR"
+                        exit 1
+                    fi
+                    echo "$HEAD into $BASE by $AUTHOR"
